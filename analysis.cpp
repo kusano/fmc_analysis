@@ -4,6 +4,7 @@
 #include <vector>
 #include <set>
 #include <unordered_set>
+#include <map>
 using namespace std;
 
 // x1 <- x2 <- x3 <- x4 <- x1
@@ -367,7 +368,7 @@ int main()
     }
 
     // HTR -> finish
-    set<Cube> hdr_cubes;
+    set<Cube> htr_cubes;
     {
         printf("HTR -> finish\n");
 
@@ -400,7 +401,7 @@ int main()
         }
 
         for (set<Cube> &C: cubes)
-            hdr_cubes.insert(C.begin(), C.end());
+            htr_cubes.insert(C.begin(), C.end());
     }
 
     // DR -> HTR
@@ -410,8 +411,129 @@ int main()
         vector<int> moves = {0, 1, 2, 4, 7, 9, 10, 11, 13, 16};
 
         vector<unordered_set<uint64_t>> cubes(1);
-        for (Cube cube: hdr_cubes)
+        for (Cube cube: htr_cubes)
             // DRの動きでE列のEPは変化しないので、無視して扱う。
+            cubes[0].insert(cube.compress());
+
+        for (int d=0; !cubes[d].empty(); d++)
+        {
+            if (cubes[d].size()%cubes[0].size()!=0)
+                printf("error\n");
+            printf("%3d %8lld\n", d, cubes[d].size()/cubes[0].size());
+
+            cubes.push_back(unordered_set<uint64_t>());
+
+            Cube cube;
+            for (uint64_t c: cubes[d])
+            {
+                cube.decompress(c);
+
+                for (int m: moves)
+                {
+                    cube.move(m);
+
+                    uint64_t c2 = cube.compress();
+                    bool found = false;
+                    for (int dd=0; dd<=d+1 && !found; dd++)
+                        if (cubes[dd].count(c2)>0)
+                            found = true;
+                    if (!found)
+                        cubes[d+1].insert(c2);
+
+                    cube.move(m/3*3+2-m%3);
+                }
+            }
+        }
+    }
+
+    // HTR -> finish (leave slice)
+    {
+        printf("HTR -> finish (leave slice)\n");
+
+        Cube cube;
+        // E層を無視する。
+        cube.EP[4] = -1;
+        cube.EP[5] = -1;
+        cube.EP[6] = -1;
+        cube.EP[7] = -1;
+        vector<int> moves = {1, 4, 7, 10, 13, 16};
+
+        vector<set<Cube>> cubes(1);
+        cubes[0].insert(cube);
+
+        for (int d=0; !cubes[d].empty(); d++)
+        {
+            printf("%3d %8lld\n", d, cubes[d].size());
+
+            cubes.push_back(set<Cube>());
+
+            for (Cube cube: cubes[d])
+                for (int m: moves)
+                {
+                    cube.move(m);
+
+                    bool found = false;
+                    for (int dd=0; dd<=d+1 && !found; dd++)
+                        if (cubes[dd].count(cube)>0)
+                            found = true;
+                    if (!found)
+                        cubes[d+1].insert(cube);
+
+                    cube.move(m/3*3+2-m%3);
+                }
+        }
+    }
+
+    // FR -> finish (leave slice)
+    set<Cube> fr_cubes;
+    {
+        printf("FR -> finish (leave slice)\n");
+
+        Cube cube;
+        // E層を無視する。
+        cube.EP[4] = -1;
+        cube.EP[5] = -1;
+        cube.EP[6] = -1;
+        cube.EP[7] = -1;
+        vector<int> moves = {4, 7, 13, 16};
+
+        vector<set<Cube>> cubes(1);
+        cubes[0].insert(cube);
+
+        for (int d=0; !cubes[d].empty(); d++)
+        {
+            printf("%3d %8lld\n", d, cubes[d].size());
+
+            cubes.push_back(set<Cube>());
+
+            for (Cube cube: cubes[d])
+                for (int m: moves)
+                {
+                    cube.move(m);
+
+                    bool found = false;
+                    for (int dd=0; dd<=d+1 && !found; dd++)
+                        if (cubes[dd].count(cube)>0)
+                            found = true;
+                    if (!found)
+                        cubes[d+1].insert(cube);
+
+                    cube.move(m/3*3+2-m%3);
+                }
+        }
+
+        for (set<Cube> &C: cubes)
+            fr_cubes.insert(C.begin(), C.end());
+    }
+
+    // HTR -> FR
+    {
+        printf("HTR -> FR\n");
+
+        vector<int> moves = {1, 4, 7, 10, 13, 16};
+
+        vector<unordered_set<uint64_t>> cubes(1);
+        for (Cube cube: fr_cubes)
             cubes[0].insert(cube.compress());
 
         for (int d=0; !cubes[d].empty(); d++)
